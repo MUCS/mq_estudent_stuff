@@ -4,6 +4,10 @@
 import urllib
 import urllib2
 import re
+import pycurl
+import StringIO
+import sys
+import os
 
 def strip_tags(value):
 	return re.sub(r'<[^>]*?>', '', value)
@@ -72,7 +76,7 @@ def get_input():
 def main():
 	url_login = "https://student1.mq.edu.au/login.aspx"
 	url_results = "https://student1.mq.edu.au/S1/ResultsDtls10.aspx?r=MQ.ESTU.UGSTUDNT&f=MQ.ESW.RSLTDTLS.WEB"
-
+	
 	conn = urllib2.urlopen(url_login)
 	the_page =  conn.read()
 	#close the connection
@@ -87,30 +91,35 @@ def main():
 	username = get_input()
 	print "enter your password "
 	password = get_input()
-
-	#set the submit values
-	submit_data= {'__VIEWSTATE' :view_state,'ctl00$Content$txtUserName$txtText' : username,'ctl00$Content$txtPassword$txtText' : password, "ctl00$Content$cmdLogin" : "Login In", '__EVENTVALIDATION': event_validation }
-
-	#url encode the submit data
-	submit_data = urllib.urlencode(submit_data)
-	the_opener = urllib2.build_opener(urllib2.HTTPCookieProcessor() )
-	urllib2.install_opener(the_opener)
-	#open a connection, login + get a cookie
-	conn = the_opener.open(url_login, submit_data)
-	response =  conn.read()
-	#close the connection
-	conn.close()
+	submit_data_t = [ ('__VIEWSTATE', view_state), ('ctl00$Content$txtUserName$txtText', username), ('ctl00$Content$txtPassword$txtText', password), ('ctl00$Content$cmdLogin', 'Login In'), ('__EVENTVALIDATION',event_validation) ]
+	submit_data_t = urllib.urlencode(submit_data_t)
 	
-	#get the page with the results on it
-	conn = the_opener.open(url_results)
-	the_page = conn.read()
-	#close the connection
-	conn.close()
+	string_s = StringIO.StringIO()
+	connection = pycurl.Curl()
+	connection.setopt(pycurl.FOLLOWLOCATION, True)
+	connection.setopt(pycurl.SSL_VERIFYPEER, 0) #Sorry but MQ provides the wrong information.
+	connection.setopt(pycurl.SSL_VERIFYHOST, 2)
+	connection.setopt(pycurl.WRITEFUNCTION, string_s.write)
+	connection.setopt(pycurl.COOKIEFILE, 'cookie.txt')
+	connection.setopt(pycurl.COOKIEJAR, 'cookie.txt')
+	connection.setopt(pycurl.POSTFIELDS, submit_data_t)
+	connection.setopt(pycurl.URL, url_login)
+	connection.perform()
+	connection.setopt(pycurl.WRITEFUNCTION, string_s.write)
+	connection.setopt(pycurl.URL, url_results)
+	connection.perform()
+	the_page = str(string_s.getvalue())
 	
 	#now process the data to get the gpa and print it 
 	striped_data =  strip_tags(the_page)
 	striped_data = striped_data.split("\n")
 	calculate_gpa_and_print(striped_data)
+	connection.close()
+	try:
+		os.remove("cookie.txt")
+	except:
+		print "failed to remove the cookie file cookie.txt!"
+
 
 if __name__=='__main__':
 	main()
