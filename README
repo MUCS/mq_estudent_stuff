@@ -1,4 +1,4 @@
-This contains a small python program called mq_get_gpa.py .
-This program can calculator  your MQ Uni gpa.
-Simply run python mq_get_gpa.py
+This contains a python program called mq_get_info.py .
+This program can calculate your gpa and it can show what waivers have been approved.
+Simply run python mq_get_info.py
 
