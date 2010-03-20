@@ -43,7 +43,12 @@ def print_stats(hd_list, d_list, c_list, p_list, pc_list, f_list):
 	print_units_in_grade(f_list)
 
 
-def calculate_gpa_and_print(data):
+def check_assumption_format(counter,data_leng,temp):
+	assert len(temp) >=27
+	assert counter+1 < (data_leng)
+	assert counter-3 >= 0
+
+def calculate_gpa_and_print(data,unit_prefix_1,unit_prefix_2):
 	rt = 0 #results total
 	counter =0
 	tc =0 #total credit points
@@ -53,61 +58,62 @@ def calculate_gpa_and_print(data):
 	p_list = ["P"]
 	pc_list = ["PC"]
 	f_list = ["F"]
+	wc_total = 0
+	wam_top = 0
 
+	list_grades = ["HDHigh Distinction", "DDistinction", "CRCredit", "PPass", "PCConceded", "FFail"]
+	dict_gpa_points = {}
+	dict_gpa_points["HDHigh Distinction"] = 4
+	dict_gpa_points["DDistinction"] = 4
+	dict_gpa_points["CRCredit"] = 3
+	dict_gpa_points["PPass"] = 2
+	dict_gpa_points["PCConceded"] = 1
+	dict_gpa_points["FFail"] = 0
+
+	data_leng = len(data)
 	for line in data:
-		if "HDHigh Distinction" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			rt  = rt + ( int (get_credit_point(data[counter+1]) ) *(4) )
-			temp = data[counter-3]
-			assert len(temp) >=27
-			hd_list.append(temp[20:27])
-		elif "DDistinction" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			rt  = rt + ( int (get_credit_point(data[counter+1]) ) *(4) )
-			temp = data[counter-3]
-			assert len(temp) >=27
-			d_list.append(temp[20:27])
-		elif "CRCredit" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			rt  = rt + ( int (get_credit_point(data[counter+1]) ) *(3) )
-			temp = data[counter-3]
-			assert len(temp) >=27
-			c_list.append(temp[20:27])
-		elif "PPass" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			rt  = rt + ( int (get_credit_point(data[counter+1]) ) *(2) )
-			temp = data[counter-3]
-			assert len(temp) >=27
-			p_list.append(temp[20:27])
-		elif "PCConceded" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			rt  = rt + ( int (get_credit_point(data[counter+1]) ) *(1) )
-			temp = data[counter-3]
-			assert len(temp) >=27
-			pc_list.append(temp[20:27])
-		elif "FFail" in line:
-			assert counter+1 < len(data)
-			assert counter-3 >= 0
-			tc =tc + int (get_credit_point(data[counter+1]) )
-			bar = data[counter-3]
-			temp = data[counter-3]
-			assert len(temp) >=27
-			f_list.append(temp[20:27])
+		for i in list_grades:
+			if i in line:
+				temp = data[counter-3]
+				check_assumption_format(counter,data_leng,temp)
+				credit_point = int(get_credit_point(data[counter+1]))
+				tc += credit_point
+				rt +=  credit_point * dict_gpa_points[i]
+				if i == "HDHigh Distinction":
+					hd_list.append(temp[20:27])
+				elif i == "DDistinction":
+					d_list.append(temp[20:27])
+				elif i == "CRCredit":
+					c_list.append(temp[20:27])
+				elif i == "PPass":
+					p_list.append(temp[20:27])
+				elif i == "PCConceded":
+					pc_list.append(temp[20:27])
+				elif i == "FFail":
+					f_list.append(temp[20:27])
 
-		counter =counter +1
-	assert tc !=0
+				else:
+					assert True == False, "not a known performance band"
+
+				if unit_prefix_1 in temp or unit_prefix_2 in temp:
+					mark = data[counter-1][24:26]
+					wc_weight = credit_point * int(temp[24:25])
+					wc_total += wc_weight
+					wam_top += ( int(mark) * wc_weight)
+				break
+		counter += 1
+	assert tc != 0
+	assert wc_total != 0
 	print_stats(hd_list, d_list, c_list, p_list, pc_list, f_list)
-	print "Your gpa is " +  str( float(rt)/float(tc) ) + "\n"
+	print "Your GPA is " +  str( float(rt)/float(tc) ) + "\n"
+
+	if unit_prefix_1 != "" and unit_prefix_2 != "":
+		print "Your "+ unit_prefix_1 + "/" +unit_prefix_2 + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
+
+	elif unit_prefix_1 !="":
+		print "Your "+ unit_prefix_1 + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
+	else:
+		print "Your WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
 
 def get_value_of_it(item,data):
 	counter = 0
@@ -125,10 +131,8 @@ def get_input():
 def get_details_for_connection(url, conn_details):
 	conn = urllib2.urlopen(url)
 	the_page =  conn.read()
-
 	#close the connection
 	conn.close()
-
 	data = the_page.split("\n")
 	conn_details["view_state"] = get_value_of_it("__VIEWSTATE",data)
 	conn_details["event_validation"] = get_value_of_it("__EVENTVALIDATION",data)
@@ -143,19 +147,18 @@ def get_user_credentials_from_user_input(conn_details):
 
 def get_waiver_info(data):
 	at_waiver_pos = False
-	counter =0
-	first_hit =True
+	counter = 0
+	first_hit = True
 	print "Approved waivers:"
 	for line in data:
 		if "UnitTitleEffective DateExpiry Date" in line:
 			at_waiver_pos = True
 			counter = counter +1
-
-		if at_waiver_pos ==True and first_hit ==False:
+		if at_waiver_pos == True and first_hit == False:
 			print line[3:]
 			counter = counter +1
 		if counter >=10:
-			at_waiver_pos =False
+			at_waiver_pos = False
 		if counter >=1:
 			first_hit = False
 
@@ -196,10 +199,10 @@ def delete_cookie():
 def create_mq_directory(mq_dir):
 	#if the paths don't exist already, create them.
 	state = "done"
-	if mq_dir ==None:
+	if mq_dir == None:
 		mq_dir = os.path.expanduser("~/.mq")
-	if os.path.exists(mq_dir) ==False:
-		state ="init"
+	if os.path.exists(mq_dir) == False:
+		state = "init"
 		os.mkdir(mq_dir)
 	return state
 
@@ -213,7 +216,7 @@ def read_from_a_file(full_file_loc,return_type ):
 	if return_type == "read":
 		return_type = the_file.read()
 	if return_type =="readlines":
-		return_type =the_file.readlines()
+		return_type = the_file.readlines()
 	the_file.close()
 	return return_type
 
@@ -238,10 +241,8 @@ def get_credentials_from_accounts_file(conn_details):
 			index = line.find("=")
 			assert index +1 < len(line)
 			password = line[index+1:-1]
-
 	#url encoding is handled in the connection part. dont' worry about it here.
 	conn_details["username"] = username
-
 	conn_details["password"] = password
 	return conn_details
 
@@ -256,12 +257,26 @@ def main():
 	error_flag = False
 	test  = False #test
 
-	print "enter gpa to get gpa information, otherwise enter waiver to get waiver information."
+	unit_prefix_1 = ""  #e.g. ISYS
+	unit_prefix_2 = ""  #e.g. COMP
+
+	print "enter gpa to get gpa information, enter waiver to get waiver information or enter wam to get wam information."
 	mode = get_input()
 
-	if mode == "gpa":
+	if "gpa" in mode:
+		mode = "gpa"
 		url_target = url_results
-	elif mode == "waiver":
+	elif "wam" in mode:
+		mode = "wam"
+		url_target = url_results
+		print "Optional: enter a unit prefix to calculate selective WAM"
+		unit_prefix_1 = get_input()
+		unit_prefix_1 = unit_prefix_1.upper()
+		print "Optional: enter another unit prefix"
+		unit_prefix_2 = get_input()
+		unit_prefix_2 = unit_prefix_2.upper()
+	elif "waiver" in mode:
+		mode = "waiver"
 		url_target = url_waiver
 	else:
 		print "invalid mode choice"
@@ -301,8 +316,8 @@ def main():
 			sys.exit(3)
 
 	striped_data = data.split("\n")
-	if mode == "gpa":
-		calculate_gpa_and_print(striped_data)
+	if mode == "gpa" or mode == "wam":
+		calculate_gpa_and_print(striped_data,unit_prefix_1,unit_prefix_2)
 		write_to_a_file(data,os.path.expanduser("~/.mq/gpa-page"))
 
 	elif mode == "waiver":
