@@ -9,6 +9,7 @@ import StringIO
 import sys
 import os
 import getpass
+
 def strip_tags(value):
 	return re.sub(r'<[^>]*?>', '', value)
 
@@ -204,6 +205,7 @@ def create_mq_directory(mq_dir):
 	if os.path.exists(mq_dir) == False:
 		state = "init"
 		os.mkdir(mq_dir)
+		os.chmod(os.path.expanduser("~/.mq"),16832)
 	return state
 
 def write_to_a_file(data,full_file_loc):
@@ -283,6 +285,7 @@ def main():
 		sys.exit(1)
 
 	state = create_mq_directory(None)
+	os.chmod(os.path.expanduser("~/.mq"),16832)
 	if state == "init":
 		get_user_credentials_from_user_input(conn_details)
 		save_credentials_to_accounts_file(conn_details["username"], conn_details["password"], os.path.expanduser("~/.mq/account") )
