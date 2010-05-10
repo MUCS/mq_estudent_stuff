@@ -155,7 +155,7 @@ def get_waiver_info(data):
 		if "UnitTitleEffective DateExpiry Date" in line:
 			at_waiver_pos = True
 			counter = counter +1
-		if at_waiver_pos == True and first_hit == False:
+		if at_waiver_pos and not first_hit:
 			print line[3:]
 			counter = counter +1
 		if counter >=10:
@@ -202,7 +202,7 @@ def create_mq_directory(mq_dir):
 	state = "done"
 	if mq_dir == None:
 		mq_dir = os.path.expanduser("~/.mq")
-	if os.path.exists(mq_dir) == False:
+	if not os.path.exists(mq_dir):
 		state = "init"
 		os.mkdir(mq_dir)
 		os.chmod(os.path.expanduser("~/.mq"),16832)
@@ -290,7 +290,7 @@ def main():
 		get_user_credentials_from_user_input(conn_details)
 		save_credentials_to_accounts_file(conn_details["username"], conn_details["password"], os.path.expanduser("~/.mq/account") )
 
-	if test == True:
+	if test:
 		try:
 			data = read_from_a_file(os.path.expanduser("~/.mq/" + mode + "-page"),"read")
 		except Exception, e:
@@ -303,7 +303,7 @@ def main():
 			print "\nAn error occured during receiving the required information from the estudent website."
 			error_flag = True
 
-		if error_flag == True:
+		if error_flag:
 			sys.exit(3)
 
 		#get credentials
@@ -314,7 +314,7 @@ def main():
 			error_flag = True
 			traceback.print_exc(file=sys.stderr)
 			sys.stderr.flush()
-		if error_flag == True:
+		if error_flag:
 			print "An error occured while trying to get information from estudent."
 			sys.exit(3)
 
