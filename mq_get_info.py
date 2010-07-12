@@ -9,6 +9,7 @@ import StringIO
 import sys
 import os
 import getpass
+from optparse import OptionParser
 
 def strip_tags(value):
 	return re.sub(r'<[^>]*?>', '', value)
@@ -16,9 +17,9 @@ def strip_tags(value):
 def get_credit_point(data):
 	data = str(data)
 	index_grade = data.find(" 3")
-	if index_grade ==-1:
+	if index_grade == -1:
 		index_grade = data.find(" 4")
-	if index_grade ==-1:
+	if index_grade == -1:
 		return
 	assert index_grade+3 <=len(data)
 	check = str(data[index_grade+2:index_grade+3])
@@ -49,10 +50,10 @@ def check_assumption_format(counter,data_leng,temp):
 	assert counter+1 < (data_leng)
 	assert counter-3 >= 0
 
-def calculate_gpa_and_print(data,unit_prefix_1,unit_prefix_2):
+def calculate_gpa_and_print(data, wam_prefix):
 	rt = 0 #results total
 	counter =0
-	tc =0 #total credit points
+	tc = 0 #total credit points
 	hd_list = ["HD"]
 	d_list = ["D"]
 	c_list = ["C"]
@@ -96,7 +97,7 @@ def calculate_gpa_and_print(data,unit_prefix_1,unit_prefix_2):
 				else:
 					assert True == False, "not a known performance band"
 
-				if unit_prefix_1 in temp or unit_prefix_2 in temp:
+				if wam_prefix["one"].lower() in temp.lower() or wam_prefix["two"].lower() in temp.lower():
 					mark = data[counter-1][24:26]
 					wc_weight = credit_point * int(temp[24:25])
 					wc_total += wc_weight
@@ -108,11 +109,11 @@ def calculate_gpa_and_print(data,unit_prefix_1,unit_prefix_2):
 	print_stats(hd_list, d_list, c_list, p_list, pc_list, f_list)
 	print "Your GPA is " +  str( float(rt)/float(tc) ) + "\n"
 
-	if unit_prefix_1 != "" and unit_prefix_2 != "":
-		print "Your "+ unit_prefix_1 + "/" +unit_prefix_2 + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
+	if  wam_prefix["one"] != "" and  wam_prefix["two"] != "":
+		print "Your "+  wam_prefix["one"] + "/" +  wam_prefix["two"] + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
 
-	elif unit_prefix_1 !="":
-		print "Your "+ unit_prefix_1 + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
+	elif  wam_prefix["one"] !="":
+		print "Your "+  wam_prefix["one"] + " WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
 	else:
 		print "Your WAM is "  + str (float(wam_top) / (wc_total) )  + "\n"
 
@@ -200,12 +201,11 @@ def delete_cookie():
 def create_mq_directory(mq_dir):
 	#if the paths don't exist already, create them.
 	state = "done"
-	if mq_dir == None:
+	if mq_dir is None:
 		mq_dir = os.path.expanduser("~/.mq")
 	if not os.path.exists(mq_dir):
 		state = "init"
 		os.mkdir(mq_dir)
-		os.chmod(os.path.expanduser("~/.mq"),16832)
 	return state
 
 def write_to_a_file(data,full_file_loc):
@@ -215,9 +215,9 @@ def write_to_a_file(data,full_file_loc):
 
 def read_from_a_file(full_file_loc,return_type ):
 	the_file = open(full_file_loc, 'r')
-	if return_type == "read":
+	if return_type is "read":
 		return_type = the_file.read()
-	if return_type =="readlines":
+	else:
 		return_type = the_file.readlines()
 	the_file.close()
 	return return_type
@@ -243,50 +243,18 @@ def get_credentials_from_accounts_file(conn_details):
 			index = line.find("=")
 			assert index +1 < len(line)
 			password = line[index+1:-1]
-	#url encoding is handled in the connection part. dont' worry about it here.
 	conn_details["username"] = username
 	conn_details["password"] = password
 	return conn_details
 
-def main():
-	url_login = "https://student1.mq.edu.au/login.aspx"
-	url_results = "https://student1.mq.edu.au/S1/ResultsDtls10.aspx?r=MQ.ESTU.UGSTUDNT&f=MQ.ESW.RSLTDTLS.WEB"
-	url_waiver="https://student1.mq.edu.au/S1/StuWvrDtls10.aspx?r=MQ.ESTU.UGSTUDNT&f=MQ.ESW.WVRDTLS.WEB"
+def main(mode, url_t, wam_prefix={"one": "", "two": ""}, test=False):
 
-	mode = "gpa"
+	url_login = "https://student1.mq.edu.au/login.aspx"
 	conn_details = {}
 	data = ""
-	error_flag = False
-	test  = False #test
-
-	unit_prefix_1 = ""  #e.g. ISYS
-	unit_prefix_2 = ""  #e.g. COMP
-
-	print "enter gpa to get gpa information, enter waiver to get waiver information or enter wam to get wam information."
-	mode = get_input()
-
-	if "gpa" in mode:
-		mode = "gpa"
-		url_target = url_results
-	elif "wam" in mode:
-		mode = "wam"
-		url_target = url_results
-		print "Optional: enter a unit prefix to calculate selective WAM"
-		unit_prefix_1 = get_input()
-		unit_prefix_1 = unit_prefix_1.upper()
-		print "Optional: enter another unit prefix"
-		unit_prefix_2 = get_input()
-		unit_prefix_2 = unit_prefix_2.upper()
-	elif "waiver" in mode:
-		mode = "waiver"
-		url_target = url_waiver
-	else:
-		print "invalid mode choice"
-		sys.exit(1)
 
 	state = create_mq_directory(None)
-	os.chmod(os.path.expanduser("~/.mq"),16832)
-	if state == "init":
+	if state is "init":
 		get_user_credentials_from_user_input(conn_details)
 		save_credentials_to_accounts_file(conn_details["username"], conn_details["password"], os.path.expanduser("~/.mq/account") )
 
@@ -295,39 +263,54 @@ def main():
 			data = read_from_a_file(os.path.expanduser("~/.mq/" + mode + "-page"),"read")
 		except Exception, e:
 			print e
-	else:
-		try:
-			conn_details = get_details_for_connection(url_login,conn_details)
-		except Exception, e:
-			print e
-			print "\nAn error occured during receiving the required information from the estudent website."
-			error_flag = True
+		sys.exit(0)
+	try:
+		conn_details = get_details_for_connection(url_login,conn_details)
+	except Exception, e:
+		print "\nAn error occured during receiving the required information from the estudent website."
+		raise(e)
 
-		if error_flag:
-			sys.exit(3)
-
-		#get credentials
-		conn_details = get_credentials_from_accounts_file(conn_details)
-		try:
-			data = get_estudent_info(url_login, url_target, conn_details)
-		except Exception:
-			error_flag = True
-			traceback.print_exc(file=sys.stderr)
-			sys.stderr.flush()
-		if error_flag:
-			print "An error occured while trying to get information from estudent."
-			sys.exit(3)
-
+	#get credentials
+	conn_details = get_credentials_from_accounts_file(conn_details)
+	data = get_estudent_info(url_login, url_t, conn_details)
 	striped_data = data.split("\n")
-	if mode == "gpa" or mode == "wam":
-		calculate_gpa_and_print(striped_data,unit_prefix_1,unit_prefix_2)
+
+	if mode in ["gpa", "wam"]:
+		calculate_gpa_and_print(striped_data, wam_prefix)
 		write_to_a_file(data,os.path.expanduser("~/.mq/gpa-page"))
 
-	elif mode == "waiver":
+	elif mode is "waiver":
 		get_waiver_info(striped_data)
 		write_to_a_file(data,os.path.expanduser("~/.mq/waiver-page"))
 
 	delete_cookie()
 
 if __name__=='__main__':
-	main()
+	wam_prefix={"one": "", "two": ""}
+
+	parser = OptionParser()
+	parser.add_option("-g", "--gpa", action="store_true", dest="gpa", help = "output gpa information")
+	parser.add_option("-w", "--wam", action="store", dest="wam", help = """output wam information \n You can specify up to two unit prefixes\n e.g. -w "COMP ISYS" """)
+	parser.add_option("-a", "--waiver", action="store_true", dest="waiver", help = "output waiver information")
+	parser.add_option("-s", "--sem", action="store", dest="sem", help = "enter semester number")
+	(options, args) = parser.parse_args()
+	if options.sem is None:
+		sem = "1"
+	else:
+		sem = str(options.sem)
+
+	url_t = "https://student1.mq.edu.au/S" + sem + "/ResultsDtls10.aspx?r=MQ.ESTU.UGSTUDNT&f=MQ.ESW.RSLTDTLS.WEB"
+	if options.gpa:
+		mode = "gpa"
+	elif options.wam is not None:
+		mode = "wam"
+		wam_l = options.wam.split()
+		if len(wam_l) >= 1:
+			wam_prefix["one"] = wam_l[0]
+		if len(wam_l) >= 2:
+			wam_prefix["two"] = wam_l[1]
+	else:
+		mode = "waiver"
+		url_t = "https://student1.mq.edu.au/S" + sem + "/StuWvrDtls10.aspx?r=MQ.ESTU.UGSTUDNT&f=MQ.ESW.WVRDTLS.WEB"
+	main(mode, url_t, wam_prefix)
+
