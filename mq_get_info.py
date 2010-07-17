@@ -215,7 +215,7 @@ def write_to_a_file(data,full_file_loc):
 
 def read_from_a_file(full_file_loc,return_type ):
 	the_file = open(full_file_loc, 'r')
-	if return_type is "read":
+	if return_type == "read":
 		return_type = the_file.read()
 	else:
 		return_type = the_file.readlines()
@@ -254,7 +254,7 @@ def main(mode, url_t, wam_prefix={"one": "", "two": ""}, test=False):
 	data = ""
 
 	state = create_mq_directory(None)
-	if state is "init":
+	if state == "init":
 		get_user_credentials_from_user_input(conn_details)
 		save_credentials_to_accounts_file(conn_details["username"], conn_details["password"], os.path.expanduser("~/.mq/account") )
 
@@ -279,7 +279,7 @@ def main(mode, url_t, wam_prefix={"one": "", "two": ""}, test=False):
 		calculate_gpa_and_print(striped_data, wam_prefix)
 		write_to_a_file(data,os.path.expanduser("~/.mq/gpa-page"))
 
-	elif mode is "waiver":
+	elif mode == "waiver":
 		get_waiver_info(striped_data)
 		write_to_a_file(data,os.path.expanduser("~/.mq/waiver-page"))
 
