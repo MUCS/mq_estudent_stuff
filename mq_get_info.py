@@ -206,6 +206,7 @@ def create_mq_directory(mq_dir):
 	if not os.path.exists(mq_dir):
 		state = "init"
 		os.mkdir(mq_dir)
+	os.chmod(mq_dir, 16832)
 	return state
 
 def write_to_a_file(data,full_file_loc):
