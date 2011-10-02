@@ -205,7 +205,7 @@ def create_mq_directory(mq_dir):
 		mq_dir = os.path.expanduser("~/.mq")
 	if not os.path.exists(mq_dir):
 		state = "init"
-		os.mkdir(mq_dir)
+		os.mkdir(mq_dir, 16832)
 	os.chmod(mq_dir, 16832)
 	return state
 
@@ -238,11 +238,9 @@ def get_credentials_from_accounts_file(conn_details):
 	for line in the_file:
 		if "username=" in line:
 			index = line.find("=")
-			assert index +1 < len(line)
 			username = line[index+1:-1]
 		if "password=" in line:
 			index = line.find("=")
-			assert index +1 < len(line)
 			password = line[index+1:-1]
 	conn_details["username"] = username
 	conn_details["password"] = password
